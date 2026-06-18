@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brainware University Chatbot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #020818;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.12;
+            animation: bgFloat ease-in-out infinite;
+        }
+        .bg-circle:nth-child(1) { width: 500px; height: 500px; background: #1a56db; top: -100px; left: -100px; animation-duration: 12s; }
+        .bg-circle:nth-child(2) { width: 400px; height: 400px; background: #7c3aed; bottom: -100px; right: -100px; animation-duration: 15s; }
+        .bg-circle:nth-child(3) { width: 300px; height: 300px; background: #0891b2; top: 40%; left: 40%; animation-duration: 10s; }
+        @keyframes bgFloat { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,30px) scale(1.1)} }
+
+        /* Main container */
+        .container {
+            width: 520px;
+            height: 720px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 28px;
+            overflow: hidden;
+            backdrop-filter: blur(30px);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #7c3aed 100%);
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .header-inner { position: relative; display: flex; align-items: center; gap: 14px; }
+        .logo-box {
+            width: 52px; height: 52px;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse { 0%,100%{box-shadow:0 0 20px rgba(255,255,255,0.1)} 50%{box-shadow:0 0 30px rgba(255,255,255,0.25)} }
+        .header-text h1 { color: white; font-size: 17px; font-weight: 700; letter-spacing: 0.3px; }
+        .header-text p { color: rgba(255,255,255,0.65); font-size: 11px; margin-top: 2px; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(0,255,136,0.12);
+            border: 1px solid rgba(0,255,136,0.25);
+            padding: 2px 9px; border-radius: 20px;
+            margin-top: 5px;
+        }
+        .dot { width: 6px; height: 6px; background: #00ff88; border-radius: 50%; animation: pulse 2s infinite; }
+        .status-badge span { color: #00ff88; font-size: 10px; font-weight: 600; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        .stat {
+            flex: 1;
+            padding: 8px 4px;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .stat:last-child { border-right: none; }
+        .stat-num { color: #60a5fa; font-size: 13px; font-weight: 700; }
+        .stat-label { color: rgba(255,255,255,0.35); font-size: 9px; margin-top: 1px; }
+
+        /* Suggestions */
+        .suggestions {
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.15);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+        }
+        .chip {
+            padding: 4px 11px;
+            background: rgba(29,78,216,0.15);
+            border: 1px solid rgba(29,78,216,0.3);
+            color: #93c5fd;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.25s;
+            white-space: nowrap;
+        }
+        .chip:hover { background: rgba(29,78,216,0.35); color: white; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(29,78,216,0.3); }
+
+        /* Chatbox */
+        .chatbox {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+        .chatbox::-webkit-scrollbar { width: 3px; }
+        .chatbox::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+        .message { display: flex; align-items: flex-end; gap: 7px; animation: msgIn 0.3s ease; }
+        @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .message.user { flex-direction: row-reverse; }
+
+        .av {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; flex-shrink: 0;
+        }
+        .bot .av { background: linear-gradient(135deg, #1d4ed8, #7c3aed); }
+        .user .av { background: linear-gradient(135deg, #0891b2, #0e7490); }
+
+        .mw { display: flex; flex-direction: column; max-width: 76%; }
+        .user .mw { align-items: flex-end; }
+
+        .bubble {
+            padding: 9px 14px;
+            border-radius: 16px;
+            font-size: 12.5px;
+            line-height: 1.65;
+        }
+        .user .bubble {
+            background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 3px 12px rgba(29,78,216,0.35);
+        }
+        .bot .bubble {
+            background: rgba(255,255,255,0.055);
+            color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .ts { font-size: 9.5px; color: rgba(255,255,255,0.2); margin-top: 2px; padding: 0 3px; }
+
+        /* Typing */
+        .typing { display: flex; align-items: flex-end; gap: 7px; animation: msgIn 0.3s ease; }
+        .typing-b {
+            background: rgba(255,255,255,0.055);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 16px; border-bottom-left-radius: 4px;
+            padding: 11px 15px;
+            display: flex; gap: 4px; align-items: center;
+        }
+        .tdot { width: 6px; height: 6px; background: #60a5fa; border-radius: 50%; animation: tdot 1.2s infinite; }
+        .tdot:nth-child(2){animation-delay:.2s} .tdot:nth-child(3){animation-delay:.4s}
+        @keyframes tdot{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+        /* Input */
+        .input-area {
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.25);
+            display: flex; gap: 9px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        input {
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 22px;
+            color: white; font-size: 12.5px;
+            outline: none; transition: all 0.3s;
+        }
+        input::placeholder { color: rgba(255,255,255,0.22); }
+        input:focus { border-color: rgba(29,78,216,0.6); background: rgba(29,78,216,0.08); box-shadow: 0 0 0 3px rgba(29,78,216,0.1); }
+        .sbtn {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+            color: white; border: none; border-radius: 50%;
+            cursor: pointer; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 3px 12px rgba(29,78,216,0.4);
+            flex-shrink: 0;
+        }
+        .sbtn:hover { transform: scale(1.1) rotate(15deg); box-shadow: 0 5px 18px rgba(29,78,216,0.6); }
+        .sbtn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div class="bg">
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+        <div class="bg-circle"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-inner">
+                <div class="logo-box">🎓</div>
+                <div class="header-text">
+                    <h1>Brainware University</h1>
+                    <p>Official AI Assistant • Est. 2016</p>
+                    <div class="status-badge">
+                        <div class="dot"></div>
+                        <span>Online & Ready to Help</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stats-bar">
+            <div class="stat"><div class="stat-num">98%</div><div class="stat-label">Placement</div></div>
+            <div class="stat"><div class="stat-num">70+</div><div class="stat-label">Programs</div></div>
+            <div class="stat"><div class="stat-num">1000+</div><div class="stat-label">Recruiters</div></div>
+            <div class="stat"><div class="stat-num">19K+</div><div class="stat-label">Students</div></div>
+            <div class="stat"><div class="stat-num">#1</div><div class="stat-label">WB Ranking</div></div>
+        </div>
+
+        <!-- Quick chips -->
+        <div class="suggestions">
+            <span class="chip" onclick="askChip('admission process')">📋 Admission</span>
+            <span class="chip" onclick="askChip('fees and scholarship')">💰 Fees</span>
+            <span class="chip" onclick="askChip('available courses')">📚 Courses</span>
+            <span class="chip" onclick="askChip('placement details')">💼 Placement</span>
+            <span class="chip" onclick="askChip('hostel details')">🏠 Hostel</span>
+            <span class="chip" onclick="askChip('contact details')">📞 Contact</span>
+            <span class="chip" onclick="askChip('ranking and recognition')">🏆 Rankings</span>
+            <span class="chip" onclick="askChip('research')">🔬 Research</span>
+        </div>
+
+        <!-- Chat -->
+        <div class="chatbox" id="chatbox">
+            <div class="message bot">
+                <div class="av">🤖</div>
+                <div class="mw">
+                    <div class="bubble">👋 Welcome to <strong>Brainware University</strong>! I'm your AI Assistant. Ask me anything about admissions, courses, fees, placement, scholarships and more! 🎓</div>
+                    <div class="ts">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask about Brainware University..." />
+            <button class="sbtn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        function getTime() {
+            return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        }
+
+        function appendMessage(text, sender) {
+            const chatbox = document.getElementById('chatbox');
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            const av = sender === 'bot' ? '🤖' : '👤';
+            div.innerHTML = `
+                <div class="av">${av}</div>
+                <div class="mw">
+                    <div class="bubble">${text}</div>
+                    <div class="ts">${getTime()}</div>
+                </div>`;
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function showTyping() {
+            const chatbox = document.getElementById('chatbox');
+            const div = document.createElement('div');
+            div.className = 'typing'; div.id = 'typing';
+            div.innerHTML = `
+                <div class="av" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:13px;">🤖</div>
+                <div class="typing-b">
+                    <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+                </div>`;
+            chatbox.appendChild(div);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function removeTyping() {
+            const t = document.getElementById('typing');
+            if (t) t.remove();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            appendMessage(msg, 'user');
+            input.value = '';
+            showTyping();
+            await new Promise(r => setTimeout(r, 900));
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await res.json();
+                removeTyping();
+                appendMessage(data.reply, 'bot');
+            } catch(e) {
+                removeTyping();
+                appendMessage('❌ Connection error. Please try again!', 'bot');
+            }
+        }
+
+        function askChip(text) {
+            document.getElementById('userInput').value = text;
+            sendMessage();
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
+

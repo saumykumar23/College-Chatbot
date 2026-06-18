@@ -1,0 +1,4 @@
+flask
+flask-cors        # if needed for cross-origin requests
+```
+Add any AI/NLP library you use (e.g. `openai`, `transformers`, etc.)
